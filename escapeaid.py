@@ -10,10 +10,8 @@
 #   andrewarendt@gmail.com
 #    github.com/drewja/escapeaid
 
-
 import sys
 import os
-TERM = os.getenv('TERM')
 
 from static import CODE_MAP
 from static import STANDARD_COLORS
@@ -22,6 +20,8 @@ from static import COLORS_256
 from static import COLOR_GROUP_256
 from static import RESET
 from static import FSTRING
+
+TERM = os.getenv('TERM')
 
 def bgString(bg):
     """helper function for color background of text"""
@@ -82,12 +82,13 @@ def cprinter(*args, csep = ' ', sep = '', end = '\n', file = sys.stdout,
     optional arguments csep is a string to be colored and placed between
     args, and sep is same thing but will not be colored with the texts.
     define sep or csep but both will ignore csep in favor of sep"""
-    output = ''
+    output = []
     if sep: csep = ''
     if csep: sep = colorize(csep, **kwargs)
     for text in args:
-        output += colorize(text, **kwargs) + sep
-    file.write(output[:-len(sep)]+end)
+        output.append(colorize(text, **kwargs))
+    output = _insertSep(output, sep)
+    file.write(stringFromList(output)+end)
     if flush: file.flush()
 
 
@@ -111,19 +112,37 @@ def picker(*basecolors, text = 'some Sample Text $ # @ * & ! { }',
     if not basecolors:
         for i in COLORS_256:
             i = ' '+ ' '*(3-len(str(i))) + str(i)+' '
-            print(color(i,i,'black',reverse=True),
-                  color('   '+ text +'   ',
-                  i, bg, reverse = reverse), color(i, i))
+            print(colorize(i,i,'black',reverse=True),
+                  colorize('   '+ text +'   ',
+                  i, bg, reverse = reverse), colorize(i, i))
     else:
         for c in basecolors:
             if c not in PALLET_256: continue
             for v in PALLET_256[c]:
                 sv = str(v)
                 sv = ' ' + ' '*(3-len(str(sv))) + str(sv)+' '
-                print(color('  '+c+'  ', v, bg, reverse = reverse),
-                      color(sv,v,'black',reverse=True),
-                      color('   '+ text + '   ',
-                      v, bg, reverse = reverse), color(sv, v))
+                print(colorize('  '+c+'  ', v, bg, reverse = reverse),
+                      colorize(sv,v,'black',reverse=True),
+                      colorize('   '+ text + '   ',
+                      v, bg, reverse = reverse), colorize(sv, v))
+
+def _insertSep(stringlist, sep):
+    seplist = [sep for i in stringlist if i][:-1]
+    newlist = []
+    for n, sep in enumerate(seplist):
+        s = stringlist[n]
+        if s:
+            if not str(s).isspace():
+                newlist.append(stringlist[n])
+            newlist.append(sep)
+    newlist.append(stringlist[-1])
+    return newlist
+
+def stringFromList(stringList):
+    r = ''
+    for i in stringList:
+        r += str(i)
+    return r
 
 def rainbow(string, bgcolors = None,
             colors = ['red', 'orange', 'yellow', 'green', 'blue', 'purple'],
@@ -158,7 +177,8 @@ def rainbow(string, bgcolors = None,
     string = list(string)
     string.insert(0, prefill)
     string.append(postfill)
-    
+
+
     return multi(string, colors, bgcolors,
                 bold = bold,
                 reverse = reverse,
@@ -169,7 +189,8 @@ def rainbow(string, bgcolors = None,
                 reset = True,
                 sep = '')
 
-def multi(strings, colors =[], bgcolors = [], sepcolor = '', sep = ' ',
+def multi(strings, colors =[], bgcolors = [], sepprofile = None, sep = ' ',
+         includesep = False, # include sep in the color pattern
          bold = False,
          reverse = False,
          underscore = False,
@@ -183,16 +204,27 @@ def multi(strings, colors =[], bgcolors = [], sepcolor = '', sep = ' ',
                             blue = ['etc...',] ""
         keyword colorArgs can be used to override color
         example:
-        
+
         print(multi('this is a sentence of words'.split(),
                     ['red', 'blue', 'yellow', 89], white = 'this', bold=True))
 
     """
+    if not sep: includesep = True
+    if not includesep:
+        try: colors = _insertSep(colors, '')+['']
+        except IndexError: pass
+        try: bgcolors = _insertSep(bgcolors, '')+['']
+        except IndexError: pass
+    if sep:
+        if sepprofile: sep = colorize(sep, **sepprofile)
+        strings = _insertSep(strings, sep)
+    else: sep = ''
+
     if reset: reset = RESET
     else: reset = ''
+
     lenStr = len(strings)
     colorMap = {i:'' for i in range(lenStr)}
-
     if colors:
         n = 0
         while n < lenStr:
@@ -218,9 +250,7 @@ def multi(strings, colors =[], bgcolors = [], sepcolor = '', sep = ' ',
                     except: pass
             except: pass
     line = ''
-    if sep:
-        if sepcolor: sep = colorize(sep, bgcolor = sepcolor, reset=False)
-    else: sep = ''
+
     n = 0
     width = 0
     for string in strings:
@@ -228,18 +258,16 @@ def multi(strings, colors =[], bgcolors = [], sepcolor = '', sep = ' ',
         if width > maxwidth:
             string += RESET+'\n'
             width = 0
-        elif n != len(strings)-1: string += sep
+       # elif n != len(strings)-1: string += sep
         line += colorize(string, colorMap[n], bgMap[n],
                       bold=bold,
                       reverse=reverse,
                       underscore=underscore,
                       score=score,
                       blink=blink,
-
                       concealed=concealed,
                       reset = False)# + sep
         n+=1
-    lensep = len(sep)
     return line + reset
 
 class profile(dict):
@@ -265,12 +293,12 @@ class profile(dict):
 
     def string(self, text):
         return escape(**self)+text+RESET
-    
+
     def ismulti(self):
         if hasattr(self, 'colors') or hasattr(self, 'bgcolors'):
             return True
         return False
-      
+
     def multi(self, *args, **kwargs):
         s = self.copy()
         s.update(kwargs)
@@ -279,10 +307,10 @@ class profile(dict):
         if not 'bgcolors' in s and 'bgcolor' in s:
                 s['bgcolors']= [s['bgcolor'],]
         return multi(*args, **s)
-        
+
     def print(self, *texts, **kwargs):
         s = profile(self.copy())
-        s.update(kwargs)    
+        s.update(kwargs)
         try: file = s.pop('file')
         except: file = sys.stdout
         try: flush = s.pop('flush')
@@ -291,7 +319,7 @@ class profile(dict):
         except: end = '\n'
 
         if not texts and 'text' in s:
-            texts = [s.pop('text'),]        
+            texts = [s.pop('text'),]
         if s.ismulti():
             for stringlist in texts:
                 file.write(s.multi(stringlist)+RESET+end)
@@ -312,7 +340,7 @@ class profile(dict):
         blueboldunderscore = blue + green"""
         return profile(Profile, **self)
 
-def printer(*texts, color = '', bgcolor = '', **kwargs):
+def printer(*texts, **kwargs):
     """ a catch-all print function, accepts multi colors or one color """
     profile(**kwargs).print(*texts)
 
@@ -320,20 +348,20 @@ def cprint(string, color='', bgcolor='', **kwargs):
     """ single string color print with positional color and bgcolor args
         for more convienient less verbose calls.. accepts attribute
         keywords too. like bold = True.
-        
+
         cprint('this message', 'blue', 'black') # is the same as...
             blueonblack = profile(color='blue', bgcolor='black')
             cprint('this message', **blueonblack)  #  or...
                 blueonblack.print('this message')
         """
     profile(color=color, bgcolor=bgcolor, **kwargs).print(string)
-    
+
 def _run_from_ipython():
     try:
         __IPYTHON__
         return True
     except NameError:
-        return False            
+        return False
 if __name__ == '__main__':
     if sys.flags.interactive or _run_from_ipython():
         greys = list(range(238,250))
