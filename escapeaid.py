@@ -49,20 +49,16 @@ def escape(
     **kwargs):
     """ compiles escapes based on the keyword arguments or unpacked profile """
     escapes = ''
-
     if blink: escapes += FSTRING.format(str(CODE_MAP['blink']))
     if bold: escapes += FSTRING.format(str(CODE_MAP['bold']))
     if score: escapes += FSTRING.format(str(CODE_MAP['scored']))
     if underscore: escapes += FSTRING.format(str(CODE_MAP['underscore']))
     if reverse: escapes += FSTRING.format(str(CODE_MAP['reverse']))
     if concealed: escapes += FSTRING.format(str(CODE_MAP['concealed']))
-
     color = _resolve(color)
     bgcolor = _resolve(bgcolor)
-
     if bgcolor: escapes += bgString(bgcolor)
     if color: escapes += fgString(color)
-
     return escapes
 
 def colorize(text, color = '', bgcolor = '', **profile):
@@ -88,7 +84,8 @@ def cprinter(*args, csep = ' ', sep = '', end = '\n', file = sys.stdout,
     for text in args:
         output.append(colorize(text, **kwargs))
     output = _insertSep(output, sep)
-    file.write(stringFromList(output)+end)
+    file.write(stringFromList(output))
+    file.write(end)
     if flush: file.flush()
 
 
@@ -162,22 +159,19 @@ def rainbow(string, bgcolors = None,
     else: reset = ''
     prefill = ''
     postfill = ''
+    
     if rlstrip:
         for c in string:
             if c != ' ': break
             prefill += c
         string = string.lstrip(prefill)
-
         for c in reversed(range(len(string)-1)):
             if string[c] != ' ': break
             postfill += ' '
-
         string = string.rstrip(postfill)
-
     string = list(string)
     string.insert(0, prefill)
     string.append(postfill)
-
 
     return multi(string, colors, bgcolors,
                 bold = bold,
@@ -317,13 +311,19 @@ class profile(dict):
         except: flush = False
         try: end = s.pop('end')
         except: end = '\n'
-
+        try: sep = s.pop('sep')
+        except: sep = ' '
         if not texts and 'text' in s:
             texts = [s.pop('text'),]
         if s.ismulti():
             for stringlist in texts:
-                file.write(s.multi(stringlist)+RESET+end)
-                if flush: file.flush()
+                if type(stringlist) is list:
+                    msep = sep
+                else: msep = ''
+                file.write(s.multi(stringlist, sep = msep)+RESET)
+                file.write(sep)
+            file.write(end)
+            if flush: file.flush()
         else:
             cprinter(*texts, end = end, file = file, flush = flush, **s)
 
