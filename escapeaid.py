@@ -6,7 +6,7 @@
 
 
 # this is free software... liscense : gpl V2.0
-# written and maintained by Andrew J. Arendt
+# written in pure python and maintained by Andrew J. Arendt
 #   andrewarendt@gmail.com
 #    github.com/drewja/escapeaid
 
@@ -20,6 +20,7 @@ from static import COLORS_256
 from static import COLOR_GROUP_256
 from static import RESET
 from static import FSTRING
+
 
 TERM = os.getenv('TERM')
 
@@ -37,7 +38,7 @@ def _resolve(color):
         try: return CODE_MAP[color]
         except KeyError: pass
 
-def escape(
+def _escape(
     color = '', # int or string from codeMap
     bgcolor = '', # int or string from codeMap
     bold = False,
@@ -61,28 +62,28 @@ def escape(
     if color: escapes += fgString(color)
     return escapes
 
-def colorize(text, color = '', bgcolor = '', **profile):
+def _colorize(text, color = '', bgcolor = '', **profile):
     """ applies escapes to text based on keyword arguments
        and returns a printable string"""
-    try: reset = profile.pop('reset')
-    except KeyError: reset = True
+    try:reset = profile.pop('reset')
+    except: reset = True
     if reset: reset = RESET
     else: reset = ''
-    escapes = escape(color, bgcolor, **profile)
+    escapes = _escape(color, bgcolor, **profile)
     return escapes + text + reset
 
 def cprinter(*args, csep = ' ', sep = '', end = '\n', file = sys.stdout,
             flush = False, **kwargs):
-    """ print function combined with colorize function
+    """ lowest level print function combined with _colorize( function
     can be used with or without color arguments
     optional arguments csep is a string to be colored and placed between
     args, and sep is same thing but will not be colored with the texts.
     define sep or csep but both will ignore csep in favor of sep"""
     output = []
     if sep: csep = ''
-    if csep: sep = colorize(csep, **kwargs)
+    if csep: sep = _colorize(csep, **kwargs)
     for text in args:
-        output.append(colorize(text, **kwargs))
+        output.append(_colorize(text, **kwargs))
     output = _insertSep(output, sep)
     file.write(stringFromList(output))
     file.write(end)
@@ -104,24 +105,24 @@ def picker(*basecolors, text = 'some Sample Text $ # @ * & ! { }',
             in the green group background colored.
 
         escapeaid.picker(bg='pink', reverse = True) will print all color id's with
-            and pink text on  background colorized to the cooresponding color.
+            and pink text on  background _colorize(d to the cooresponding color.
         """
     if not basecolors:
         for i in COLORS_256:
             i = ' '+ ' '*(3-len(str(i))) + str(i)+' '
-            print(colorize(i,i,'black',reverse=True),
-                  colorize('   '+ text +'   ',
-                  i, bg, reverse = reverse), colorize(i, i))
+            print(_colorize(i,i,'black',reverse=True),
+                  _colorize('   '+ text +'   ',
+                  i, bg, reverse = reverse), _colorize(i, i))
     else:
         for c in basecolors:
             if c not in PALLET_256: continue
             for v in PALLET_256[c]:
                 sv = str(v)
                 sv = ' ' + ' '*(3-len(str(sv))) + str(sv)+' '
-                print(colorize('  '+c+'  ', v, bg, reverse = reverse),
-                      colorize(sv,v,'black',reverse=True),
-                      colorize('   '+ text + '   ',
-                      v, bg, reverse = reverse), colorize(sv, v))
+                print(_colorize('  '+c+'  ', v, bg, reverse = reverse),
+                      _colorize(sv,v,'black',reverse=True),
+                      _colorize('   '+ text + '   ',
+                      v, bg, reverse = reverse), _colorize(sv, v))
 
 def _insertSep(stringlist, sep):
     seplist = [sep for i in stringlist if i][:-1]
@@ -151,7 +152,7 @@ def rainbow(string, bgcolors = None,
                 concealed = False,
                 rlstrip = True,
                 reset = True):
-    """ defaults to rainbow colors, same as multi but colorizes preceeding
+    """ defaults to rainbow colors, same as multi but _colorize(s preceeding
         filler space and following filler space seperately"""
     if type(bgcolors) in (int, str):
         bgcolors = [bgcolors,]
@@ -159,7 +160,7 @@ def rainbow(string, bgcolors = None,
     else: reset = ''
     prefill = ''
     postfill = ''
-    
+
     if rlstrip:
         for c in string:
             if c != ' ': break
@@ -191,7 +192,7 @@ def multi(strings, colors =[], bgcolors = [], sepprofile = None, sep = ' ',
          score = False,
          blink = False,
          concealed = False, reset = True, maxwidth = 100, **colorArgs):
-    """ colorize each string and return them on the same line until maxwidth then a
+    """ color each string and return them on the same line until maxwidth then a
         newline is inserted.
         input can be a list of strings and colors
         or colorArgs can be red = ['this', 'phrase', 'hat', 'baseball'],
@@ -210,7 +211,7 @@ def multi(strings, colors =[], bgcolors = [], sepprofile = None, sep = ' ',
         try: bgcolors = _insertSep(bgcolors, '')+['']
         except IndexError: pass
     if sep:
-        if sepprofile: sep = colorize(sep, **sepprofile)
+        if sepprofile: sep = _colorize(sep, **sepprofile)
         strings = _insertSep(strings, sep)
     else: sep = ''
 
@@ -252,15 +253,14 @@ def multi(strings, colors =[], bgcolors = [], sepprofile = None, sep = ' ',
         if width > maxwidth:
             string += RESET+'\n'
             width = 0
-       # elif n != len(strings)-1: string += sep
-        line += colorize(string, colorMap[n], bgMap[n],
+        line += _colorize(string, colorMap[n], bgMap[n],
                       bold=bold,
                       reverse=reverse,
                       underscore=underscore,
                       score=score,
                       blink=blink,
                       concealed=concealed,
-                      reset = False)# + sep
+                      reset = False)
         n+=1
     return line + reset
 
@@ -285,8 +285,37 @@ class profile(dict):
     def __delattr__(self, name):
         del self[name]
 
-    def string(self, text):
-        return escape(**self)+text+RESET
+    def string(self, *texts, **kwargs):
+        """ the same as profile().print except returns a string and doesn't
+            print"""
+        s = profile(self.copy())
+        s.update(kwargs)
+        try: sep = s.pop('sep')
+        except: sep = ' '
+        if not texts and 'text' in s:
+            texts = [s.pop('text'),]
+        r = ''
+        #if s.ismulti():
+         #   for stringlist in texts:
+          #      if type(stringlist) is list:
+           #         msep = sep
+            #    else: msep = ''
+             #   file.write(s.multi(stringlist, sep = msep)+RESET)
+              #  file.write(sep)
+        msep = ''
+        if s.ismulti():
+            if type(texts[0]) is list: msep = sep
+            for text in texts[:-1]:
+                r += s.multi(text, sep = msep)+RESET
+                r+= sep
+            r += s.multi(texts[-1], sep = msep)+RESET
+            return r
+        else:
+            for text in texts[:-1]:
+                r += _colorize(text, **s)
+                r += sep
+            r += _colorize(texts[-1], **s)
+        return r
 
     def ismulti(self):
         if hasattr(self, 'colors') or hasattr(self, 'bgcolors'):
@@ -315,6 +344,7 @@ class profile(dict):
         except: sep = ' '
         if not texts and 'text' in s:
             texts = [s.pop('text'),]
+        print('texts = ', texts)
         if s.ismulti():
             for stringlist in texts:
                 if type(stringlist) is list:
@@ -340,11 +370,38 @@ class profile(dict):
         blueboldunderscore = blue + green"""
         return profile(Profile, **self)
 
+    def merge(self, Profile):
+        """ Modifies self to inherit any attributes from Profile that it does
+            not already have defined.
+            for redefinition of attributs use profile().update(Profile)"""
+        self = self.__add__(Profile)
+
+
 def printer(*texts, **kwargs):
     """ a catch-all print function, accepts multi colors or one color """
     profile(**kwargs).print(*texts)
 
-def cprint(string, color='', bgcolor='', **kwargs):
+def stringer(*texts, **kwargs):
+    """ a proxy function to profile().string()
+        accepts same arguments as function printer
+        returns an escaped string
+        ready for printing or inserting into a string with
+        "foo {}".format(stringer('bar', bold = True))"""
+    return profile(**kwargs).string(*texts)
+
+def estring(text, color='', bgcolor='', **kwargs):
+    """ single string color with positional color and bgcolor args
+        for more convienient less verbose calls.. accepts attribute
+        keywords too. like bold = True.
+
+        cprint('this message', 'blue', 'black') # is the same as...
+            blueonblack = profile(color='blue', bgcolor='black')
+            cprint('this message', **blueonblack)  #  or...
+                blueonblack.print('this message')
+    """
+    return profile(color=color, bgcolor=bgcolor, **kwargs).string(text)
+
+def eprint(text, color='', bgcolor='', **kwargs):
     """ single string color print with positional color and bgcolor args
         for more convienient less verbose calls.. accepts attribute
         keywords too. like bold = True.
@@ -354,7 +411,7 @@ def cprint(string, color='', bgcolor='', **kwargs):
             cprint('this message', **blueonblack)  #  or...
                 blueonblack.print('this message')
         """
-    profile(color=color, bgcolor=bgcolor, **kwargs).print(string)
+    profile(color=color, bgcolor=bgcolor, **kwargs).print(text)
 
 def _run_from_ipython():
     try:
@@ -362,8 +419,160 @@ def _run_from_ipython():
         return True
     except NameError:
         return False
+
+__doc__ = \
+"""escapeaid v0.1 xTerm color escape api
+shell usage:
+with the enviroment variable 'escapeaid' set:
+ escapeaid 'foo bar' black red bold underscore
+ {foobarshell}
+or...
+ python3 -m escapeaid 'foo bar' black red bold underscore
+ {foobarshell}
+api usage:
+for simplest usage use eprint:
+>>> eprint('foo bar', 'red')
+{foobar1}
+>>> eprint('foo bar', 'black', 'blue', bold = True)
+{foobar2}
+ * eprint accepts 3 positional or keyword optional arguments:
+        text, color, bgcolor
+   as well as optional keyword attribute arguments:
+   defaults :       bold = False
+                    reverse = False
+                    underscore = False
+                    score = False
+                    blink = False
+                    concealed = False
+
+to build custom strings or to use the literal escaped string in scripts,
+the use of the stringer and estring functions will return an escaped string
+and not print it.
+All api functions accept an unpacked instance of profile as argument.
+with estirng, stringer, eprint, printer, the instance must be unpacked like so:
+eprint('foo bar', **fooprofile)
+or
+s = stringer('foo bar', **fooprofile+barprofile)
+in the above example two profiles are unpacked and added together,
+with the leftmost profile inheriting attributes from the right profile,
+instance. With only new attributes inherited.
+
+profile instances also have a built-in interface for convienient reuse,
+profile().string and profile().print:
+profile().print('foo bar', **barprofile) , is the functionally the same as:
+    barprofile.print('foo bar')
+    printer('foo bar', **barprofile)
+    print(stringer('foo bar', **barprofile))
+    print(barprofile.string('foo bar'))
+
+The difference between printer and eprint or stringer and estring is the ability
+accept the colors argument for mulitple colors, as well as a list of strings
+rather than a single string for multi color distribution accross them is also
+acceptable:
+
+## with a list of strings the colors are distributed per string...
+>>> printer('this is a mulit-colored sentence'.split(),
+             colors=['red', 'blue', 'green', 'purple'],
+             bgcolor = 'white', bold = True)
+{multi1}
+## with one string, the colors are distributed per charactor...
+>>> printer('this is a mulit-colored sentence',
+             colors=['red', 'blue', 'green', 'purple'],
+             bgcolor ='white', bold = 1)
+{multi2}
+
+profile().print and profile().string will act the same as printer and stringer
+and if the profile instace has a colors attribute profile().colors or profile.bgcolors()
+these will be used rather than profile().color or profile().bgcolor
+if only one of the .colors or .bgcolors are defined then the it will look to
+.color or .bgcolor for a single color to use with the multi foreground or
+background.
+
+""".format(\
+   profile = estring('profile', bold=True),
+   cprint = estring('cprint', bold=True),
+   foobarshell = estring('foo bar','black', 'red', bold = True, underscore = True),
+   foobar1 = estring('foo bar', 'red'),
+   foobar2 = estring('foo bar', 'black', 'blue', bold =True),
+   foobar3 = estring('foo bar', 'blue', 'black') ,
+   foobar3bold = estring('foo bar', 'blue', 'black', bold =True) ,
+   foobar4 = multi('foo bar', colors=['blue', 'cyan'], sep = ''),
+   multi1 = stringer('this is a mulit-colored sentence'.split(),
+                     colors=['red', 'blue', 'green', 'purple'],
+                     bgcolor = 'white', bold = True),
+   multi2 = stringer('this is a mulit-colored sentence',
+                     colors=['red', 'blue', 'green', 'purple'],
+                     bgcolor = 'white', bold=True ),
+   foobar5 = estring('foo bar', 'red', 'green'),
+   foobar6 = profile({'colors': ['blue', 'cyan'],
+                      'bgcolor': 'black',
+                      'bold':True,'underscore': True}).string('foo bar test'),
+   foobar7 = None
+   )
+def isnumeric(x):
+    try:
+        int(x)
+        return True
+    except: return False
+
+def argCheck(arg, result, colors):
+    if arg in STANDARD_COLORS or isnumeric(arg):
+        colors.append(arg)
+    elif arg in ['bold', 'underscore', 'score', 'blink', 'reverse', 'concealed']:
+        result[arg] = True
+    return result, colors
+
+def fromShell(*args):
+    """ prints arguments from call to escapeaid directly from the shell
+        example: python3 -m escapeaid 'foo bar' black red bold underscore"""
+
+    if args[0][0] == '-':
+        args = list(args)
+        arg1 = args.pop(0)
+        if arg1 in ['--picker', '-p']:
+            if args:
+                try:
+                    picker(args.pop(0))
+                except:
+                    picker()
+            else: picker()
+            return
+    args = list(args)
+    colors = []
+    result = profile(text=args.pop(0))
+    for arg in args:
+        result, colors = argCheck(arg, result, colors)
+    if colors:
+        result.color = colors.pop(0)
+    if colors:
+        result.bgcolor = colors.pop(0)
+    result.print()
+
+def helpDocs():
+    print(__doc__)
 if __name__ == '__main__':
-    if sys.flags.interactive or _run_from_ipython():
+    """   blueonblack = profile(color='blue', bgcolor='black')
+    blueonblack.print('foo bar')
+
+    blueonblack.bold = True
+    printer('foo bar', **blueonblack)
+
+    blueonblack.colors = ['blue', 'cyan']
+    blueonblack.print('foo bar')
+
+    redongreen = profile(color='red', bgcolor='green', underscore=True)
+    redongreen.print('foo bar')
+    printer(**blueonblack+redongreen)
+    redongreen.update(blueonblack)
+    redongreen.print('foo bar')"""
+    if len(sys.argv) > 1:
+        if sys.argv[1] in ['-h', '--help']: helpDocs()
+        else:
+            try:
+                fromShell(*[i.strip('\'').strip('\"') for i in sys.argv[1:]])
+            except: helpDocs()
+
+    elif sys.flags.interactive or _run_from_ipython():
         greys = list(range(238,250))
         b = '233 '*25
         b = b.split(' ')
