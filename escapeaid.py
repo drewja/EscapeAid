@@ -295,13 +295,6 @@ class profile(dict):
         if not texts and 'text' in s:
             texts = [s.pop('text'),]
         r = ''
-        #if s.ismulti():
-         #   for stringlist in texts:
-          #      if type(stringlist) is list:
-           #         msep = sep
-            #    else: msep = ''
-             #   file.write(s.multi(stringlist, sep = msep)+RESET)
-              #  file.write(sep)
         msep = ''
         if s.ismulti():
             if type(texts[0]) is list: msep = sep
