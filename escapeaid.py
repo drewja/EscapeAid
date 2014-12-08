@@ -337,7 +337,6 @@ class profile(dict):
         except: sep = ' '
         if not texts and 'text' in s:
             texts = [s.pop('text'),]
-        print('texts = ', texts)
         if s.ismulti():
             for stringlist in texts:
                 if type(stringlist) is list:
