@@ -6,7 +6,7 @@ EscapeAid
 `git clone https://github.com/drewja/EscapeAid.git`  
 
 for printing directly from the shell you must first add a symlink to a folder in your path..  
-`mkdir ~/bin`  <b> it doesn't already exist </b>  
+`mkdir ~/bin`  <b>if it doesn't already exist </b>  
 `ln -s path/to/EscapeAid/escapeaid.py` <b>remember to replace path/to/</b>  
 execute the followed by..  
 `export PATH=$PATH:~/bin`  [more on PATH and exporting enviroment variables here](http://unix.stackexchange.com/questions/26047/how-to-correctly-add-a-path-to-path#answer-26059)  
