@@ -14,9 +14,10 @@ and then add the export command you just entered to your ~/.profile, or ~/.bash_
 care about bash.
 
 now you can use the escapeaid command from anywhere in the shell. try this...  
-[jdoe@jdoepc ~]$ escapeaid 'this is fun' red yellow bold
-should print <b>this is fun</b> with bold red text and yellow background
-
+```bash
+   [jdoe@jdoepc ~]$ escapeaid 'this is fun' red yellow bold
+```
+should print <b style=<"font-color:red;">this is fun</b> with bold red text and yellow background
 
 
 
