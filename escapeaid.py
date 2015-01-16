@@ -531,14 +531,16 @@ def fromShell(*args):
             return
     args = list(args)
     colors = []
-    result = profile(text=args.pop(0))
+    texts = args.pop(0).split('\\n')
+    result = profile()
     for arg in args:
         result, colors = argCheck(arg, result, colors)
     if colors:
         result.color = colors.pop(0)
     if colors:
         result.bgcolor = colors.pop(0)
-    result.print()
+    for line in texts:
+        result.print(line, end='\n')
 
 def helpDocs():
     print(__doc__)
@@ -551,6 +553,7 @@ if __name__ == '__main__':
 
     blueonblack.colors = ['blue', 'cyan']
     blueonblack.print('foo bar')
+
 
     redongreen = profile(color='red', bgcolor='green', underscore=True)
     redongreen.print('foo bar')
