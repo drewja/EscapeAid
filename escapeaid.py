@@ -545,21 +545,7 @@ def fromShell(*args):
 def helpDocs():
     print(__doc__)
 if __name__ == '__main__':
-    """   blueonblack = profile(color='blue', bgcolor='black')
-    blueonblack.print('foo bar')
 
-    blueonblack.bold = True
-    printer('foo bar', **blueonblack)
-
-    blueonblack.colors = ['blue', 'cyan']
-    blueonblack.print('foo bar')
-
-
-    redongreen = profile(color='red', bgcolor='green', underscore=True)
-    redongreen.print('foo bar')
-    printer(**blueonblack+redongreen)
-    redongreen.update(blueonblack)
-    redongreen.print('foo bar')"""
     if len(sys.argv) > 1:
         if sys.argv[1] in ['-h', '--help']: helpDocs()
         else:
