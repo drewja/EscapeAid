@@ -17,6 +17,8 @@ ln -s -T path/to/EscapeAid/escapeaid.py escapeaid
 
 now you can use the escapeaid command from anywhere in the shell. try this...  
 ```bash
-   [jdoe@jdoepc ~]$ escapeaid 'this is fun' red yellow bold
+   [jdoe@jdoepc ~]$ escapeaid 'red text' red
 ```
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b style="color:red;background-color: #FFFF00">this is fun</b>
+```diff
+- red text
+```
