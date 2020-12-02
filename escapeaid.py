@@ -553,18 +553,7 @@ def fromShell(*args):
     for line in texts:
         result.print(line, end='\n')
 
-def helpDocs():
-    print(__doc__)
-if __name__ == '__main__':
-
-    if len(sys.argv) > 1:
-        if sys.argv[1] in ['-h', '--help']: helpDocs()
-        else:
-            try:
-                fromShell(*[i.strip('\'').strip('\"') for i in sys.argv[1:]])
-            except: helpDocs()
-
-    elif sys.flags.interactive or _run_from_ipython():
+def run_interactive():
         greys = list(range(238,250))
         b = '233 '*25
         b = b.split(' ')
@@ -586,3 +575,25 @@ if __name__ == '__main__':
             cprint('Warning', 'red', bold = True, end= ' ')
             cprint('could not confirm terminal is Xterm', 'yellow', 'black', bold =True)
             cprint('but if this is red you should be ok !', 'red')
+        sys.ps1 = profile(colors=[111, 80, 13]).string('>>> ')
+
+def helpDocs():
+    print(__doc__)
+
+if __name__ == '__main__':
+
+    if len(sys.argv) > 1:
+        if sys.argv[1] in ['-h', '--help']: helpDocs()
+        elif sys.argv[1] in ['-i', '--interactive']:
+            run_interactive()
+            import code
+            console = code.InteractiveConsole(locals())
+            console.interact(banner="")
+        else:
+            try:
+                fromShell(*[i.strip('\'').strip('\"') for i in sys.argv[1:]])
+            except: helpDocs()
+
+    elif sys.flags.interactive or _run_from_ipython():
+        run_interactive()
+
