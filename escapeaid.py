@@ -108,21 +108,30 @@ def picker(*basecolors, text = 'some Sample Text $ # @ * & ! { }',
             and pink text on  background _colorize(d to the cooresponding color.
         """
     if not basecolors:
-        for i in COLORS_256:
-            i = ' '+ ' '*(3-len(str(i))) + str(i)+' '
-            print(_colorize(i,i,'black',reverse=True),
-                  _colorize('   '+ text +'   ',
-                  i, bg, reverse = reverse), _colorize(i, i))
+        for i, n in enumerate(list(range(128))):
+            ri = i + 128
+            lefti = ' '+ ' '*(3-len(str(i))) + str(i)+' '
+            righti = ' '+ ' '*(3-len(str(ri))) + str(ri)+' '
+            l = _colorize(lefti, lefti,'black',reverse=True) + \
+                _colorize('   '+ text +'   ', lefti, bg, reverse = reverse)+ \
+                _colorize(lefti, lefti)
+            r = _colorize(righti, righti,'black',reverse=True) + \
+                _colorize('   '+ text +'   ', righti, bg, reverse = reverse)+ \
+                _colorize(righti, righti)
+            print(l, end="\t")
+            print(r)
+        print()
     else:
         for c in basecolors:
             if c not in PALLET_256: continue
             for v in PALLET_256[c]:
                 sv = str(v)
                 sv = ' ' + ' '*(3-len(str(sv))) + str(sv)+' '
-                print(_colorize('  '+c+'  ', v, bg, reverse = reverse),
-                      _colorize(sv,v,'black',reverse=True),
-                      _colorize('   '+ text + '   ',
-                      v, bg, reverse = reverse), _colorize(sv, v))
+                l = _colorize('  '+c+'  ', v, bg, reverse = reverse) + \
+                    _colorize(sv,v,'black',reverse=True) + \
+                    _colorize('   '+ text + '   ', v, bg, reverse = reverse) + \
+                    _colorize(sv, v)
+                print(l)
 
 def _insertSep(stringlist, sep):
     seplist = [sep for i in stringlist if i][:-1]
@@ -152,7 +161,7 @@ def rainbow(string, bgcolors = None,
                 concealed = False,
                 rlstrip = True,
                 reset = True):
-    """ defaults to rainbow colors, same as multi but _colorize(s preceeding
+    """ defaults to rainbow colors, same as multi but _colorize(s preceding
         filler space and following filler space seperately"""
     if type(bgcolors) in (int, str):
         bgcolors = [bgcolors,]
@@ -265,7 +274,7 @@ def multi(strings, colors =[], bgcolors = [], sepprofile = None, sep = ' ',
     return line + reset
 
 class profile(dict):
-    """ reusable color profile class for making resuable instances
+    """ reusable color profile class for making reusable instances
         of the same text, colors, or attribute combinations.
         blueonblack = profile(color='blue', bgcolor='black')
         blueonblack.bold = True
@@ -350,10 +359,10 @@ class profile(dict):
             cprinter(*texts, end = end, file = file, flush = flush, **s)
 
     def __add__(self, Profile):
-        """ add operator overloading for adding profiles together
+        """ add operator overloading for merging profiles together
         returns a profile instance with the leftmost profile
         taking precedence and inherits any new attributes from
-        the right profile that it did not have defined
+        the right profile that it did not already have defined.
         blue = profile(color = 'blue', bold = 1)
         green = profile(color = 'green', underscore = 1, bold = 0)
         greenunderscore = green + blue # still not bold
@@ -383,7 +392,7 @@ def stringer(*texts, **kwargs):
 
 def estring(text, color='', bgcolor='', **kwargs):
     """ single string color with positional color and bgcolor args
-        for more convienient less verbose calls.. accepts attribute
+        for more convenient less verbose calls.. accepts attribute
         keywords too. like bold = True.
 
         cprint('this message', 'blue', 'black') # is the same as...
@@ -395,7 +404,7 @@ def estring(text, color='', bgcolor='', **kwargs):
 
 def eprint(text, color='', bgcolor='', **kwargs):
     """ single string color print with positional color and bgcolor args
-        for more convienient less verbose calls.. accepts attribute
+        for more convenient less verbose calls.. accepts attribute
         keywords too. like bold = True.
 
         cprint('this message', 'blue', 'black') # is the same as...
@@ -415,7 +424,7 @@ def _run_from_ipython():
 __doc__ = \
 """escapeaid v0.1 xTerm color escape api
 shell usage:
-with the enviroment variable 'escapeaid' set:
+with escapeaid on the $PATH:
  escapeaid 'foo bar' black red bold underscore
  {foobarshell}
 or...
@@ -440,16 +449,18 @@ for simplest usage use eprint:
 to build custom strings or to use the literal escaped string in scripts,
 the use of the stringer and estring functions will return an escaped string
 and not print it.
-All api functions accept an unpacked instance of profile as argument.
-with estirng, stringer, eprint, printer, the instance must be unpacked like so:
-eprint('foo bar', **fooprofile)
-or
-s = stringer('foo bar', **fooprofile+barprofile)
-in the above example two profiles are unpacked and added together,
+All api functions can accept an unpacked instance of profile as an argument.
+With estirng, stringer, eprint, printer, the instance must be unpacked like so:
+    eprint('foo bar', **fooprofile)
+
+profile instances can be merged with the add operator:
+    s = stringer('foo bar', **fooprofile + barprofile)
+
+In the above example, two profiles are unpacked and merged together,
 with the leftmost profile inheriting attributes from the right profile,
 instance. With only new attributes inherited.
 
-profile instances also have a built-in interface for convienient reuse,
+Profile instances also have a built-in interface for convenient reuse,
 profile().string and profile().print:
 profile().print('foo bar', **barprofile) , is the functionally the same as:
     barprofile.print('foo bar')
@@ -458,17 +469,17 @@ profile().print('foo bar', **barprofile) , is the functionally the same as:
     print(barprofile.string('foo bar'))
 
 The difference between printer and eprint or stringer and estring is the ability
-accept the colors argument for mulitple colors, as well as a list of strings
+to accept the colors argument for multiple colors, as well as a list of strings
 rather than a single string for multi color distribution accross them is also
 acceptable:
 
 ## with a list of strings the colors are distributed per string...
->>> printer('this is a mulit-colored sentence'.split(),
+>>> printer('this is a multi-colored sentence'.split(),
              colors=['red', 'blue', 'green', 'purple'],
              bgcolor = 'white', bold = True)
 {multi1}
 ## with one string, the colors are distributed per charactor...
->>> printer('this is a mulit-colored sentence',
+>>> printer('this is a multi-colored sentence',
              colors=['red', 'blue', 'green', 'purple'],
              bgcolor ='white', bold = 1)
 {multi2}
